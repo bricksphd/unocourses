@@ -1,0 +1,316 @@
+<!doctype html>
+<html>
+
+<head>
+  <title></title>
+  <style>
+    html {
+      background-color: rgb(34, 34, 34);
+    }
+
+    .svgText {
+      font-family: 'Courier New', Courier, monospace;
+
+    }
+  </style>
+  <link href='https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons' rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify/dist/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+
+<body>
+  <div id='app'>
+    <v-app>
+      <v-content>
+        <v-container fill-height grid>
+          <v-layout row wrap>
+            <v-flex xs12>
+              <svg style="width:100%;height:100%;" id="mySVG">
+
+                <g transform="translate(10, 20)">
+                  <g v-for="c in csci">
+                    <g v-if="c.done">
+
+
+                      <path v-for="line in c.lines" :d="getD(c,line)" fill="transparent" transform="translate(20, 2)"
+                        :style="getStyle(line.tx, line.ty)" />
+                    </g>
+                  </g>
+                  <g v-for="c in csci">
+                    <g v-if="c.done">
+                      <rect rx="5" ry="5" :x="getX(c.x, c.depth)-2" :y="getY(c.depth)-14" width="40" height="34" :style="getRectStyle(c.x, c.depth)"></rect>
+                      <text :x="getX(c.x, c.depth)" :y="getY(c.depth)" class="svgText">{{c.Sub}}</text>
+                      <text :x="getX(c.x, c.depth)" :y="getY(c.depth)+14" class="svgText">{{c.Num}}</text>
+                      <rect :x="getX(c.x, c.depth)-2" :y="getY(c.depth)-14" width="40" height="36" style="fill:blue;fill-opacity:0;">
+                        <title>{{c.Sub + " " + c.Num + "\n" + c.Title + "\n" + c.Desc + "\nPrerequisites/Corequisites:" + c.PreString}}</title>
+                      </rect>
+                    </g>
+                  </g>
+                </g>
+              </svg>
+
+
+            </v-flex>
+          </v-layout>
+        </v-container>
+      </v-content>
+    </v-app>
+
+  </div>
+
+  <script src='https://code.jquery.com/jquery-3.2.1.min.js'></script>
+  <script src='https://unpkg.com/vue'></script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js'></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify/dist/vuetify.js"></script>
+
+
+  <script>
+    var app = new Vue({
+      el: '#app',
+      data: {
+        rows: [],
+        ug: [],
+        grad: [],
+        all: [],
+        csci: [],
+        depth: [],
+        width: 600,
+        height: 1200,
+        windowWidth: 0,
+        windowHeight: 0,
+        colors: [
+          "#c00", "#0c0", "00c", "#cc0", "#c0c", "#0cc",
+        ]
+      },
+      mounted() {
+        this.$nextTick(function () {
+          window.addEventListener('resize', this.getWindowWidth);
+          window.addEventListener('resize', this.getWindowHeight);
+
+          //Init
+          this.getWindowWidth()
+          this.getWindowHeight()
+        })
+
+      },
+
+      methods: {
+        getColor(x,d){
+
+          let color =  hslToRgb(x/this.depth[d], d/this.depth.length*.75 + .25, .5);
+
+          return "rgb(" + color[0] + "," + color[1] + "," + color[2] + ")";
+
+        },
+        getRectStyle(x, d) {
+          
+
+          return "fill:lightblue;stroke:" + this.getColor(x,d) + ";stroke-width:2;fill-opacity:0.9;stroke-opacity:0.9";
+        },
+        getStyle(x, d) {
+
+         
+          return "stroke-width:2;stroke:" + this.getColor(x,d);
+        },
+        getD(c, line) {
+          let x1 = parseInt(this.getX(c.x, c.depth));
+          let x2 = parseInt(this.getX(line.tx, line.ty));
+          let y1 = parseInt(this.getY(c.depth));
+          let y2 = parseInt(this.getY(line.ty));
+
+          let cx1 = x1;
+          let cy1 = (y2 + y1) / 2;
+          let cx2 = x2;
+          let cy2 = (y2 + y1) / 2;
+
+          let toReturn = "M" + x1 + " " + y1 + " C " + cx1 + " " + cy1 + ", " + cx2 + " " + cy2 + ", " + x2 + " " + y2;
+          return toReturn;
+        },
+        getWindowWidth(event) {
+          this.windowWidth = document.documentElement.clientWidth;
+          console.log("Resize");
+        },
+
+        getWindowHeight(event) {
+          this.windowHeight = document.documentElement.clientHeight;
+        },
+        getX(x, d) {
+
+          let toReturn = x * $("#mySVG").width() / (this.depth[d]);
+          return toReturn;
+
+
+        },
+        getY(y) {
+          return y * this.height / this.depth.length;
+
+        },
+        test() {
+
+          this.depth = [];
+          this.depth.push(0);
+          const yMargin = 44;
+          const xMargin = 22;
+
+
+
+          if (this.grad.length > 0 && this.ug.length > 0) {
+            for (let i = 0; i < this.ug.length; i++) {
+              this.all.push(this.ug[i]);
+            }
+            for (let i = 0; i < this.grad.length; i++) {
+              //this.all.push(this.grad[i]);
+            }
+
+            //Now we can post-process them
+            let f = this.all.filter(i => i.Sub == "CSCI" || i.Sub == "CIST");
+            for (let i = 0; i < f.length; i++) {
+              let obj = f[i];
+              //obj.x = 0;
+              //obj.y = i * 10;
+              obj.lines = [];
+              obj.done = false;
+              obj.x = 0;
+              obj.y = -10;
+              obj.depth = 0;
+              //obj.depth = 0;
+              this.csci.push(obj);
+            }
+
+            //Now do prereqs
+            let allDone = true;
+            let count = 0;
+            do {
+              for (let i = 0; i < this.csci.length; i++) {
+                let c = this.csci[i];
+                if (c.done) continue;
+                if (c.Prereqs && !c.done) {
+                  //First determine our depth
+
+                  let allHaveBeenPlaced = true;
+                  let arrOfOthers = [];
+                  for (let j = 0; j < c.Prereqs.length; j++) {
+
+                    let sub = c.Prereqs[j].Sub;
+                    let num = c.Prereqs[j].Num;
+
+                    let otherList = this.csci.filter(i => i.Sub == sub && i.Num == num);
+                    if (!otherList || otherList.length == 0) {
+                      console.log("couldn't find: " + sub + " " + num);
+                    }
+                    else {
+                      let other = otherList[0]
+                      arrOfOthers.push(other);
+                    }
+
+                  }
+
+                  if (!_.every(arrOfOthers, i => i.done)) {
+                    allDone = false;
+                    continue;
+                  }
+                  else {
+                    if (arrOfOthers.length == 0) {
+                      c.depth = 0;
+                      c.y = c.depth * yMargin;
+                      c.x = this.depth[c.depth];
+                      this.depth[0]++;
+                      c.done = true;
+                    } else {
+                      let maxParentDepth = Math.max(...arrOfOthers.map(i => i.depth));
+
+                      c.depth = maxParentDepth + 1;
+                      while (this.depth.length <= c.depth && this.depth.length < 10) {
+                        this.depth.push(0);
+                      }
+                      c.x = this.depth[c.depth];
+                      this.depth[c.depth]++;
+                      c.y = c.depth * yMargin;
+                      c.done = true
+
+                      for (let b = 0; b < arrOfOthers.length; b++) {
+                        c.lines.push({ tx: arrOfOthers[b].x, ty: arrOfOthers[b].depth });
+                      }
+                    }
+                  }
+
+
+
+                  //c.lines.push({ tx: other.x, ty: other.y });
+                }
+                else {
+                  //We have no prerequisites
+                  c.depth = 0;
+                  c.y = c.depth * yMargin;
+                  c.x = this.depth[c.depth];
+                  this.depth[0]++;
+                  c.done = true;
+                }
+              }
+              count++;
+              let remaining = this.csci.filter(i => !i.done).length;
+              console.log("Remaining:" + remaining);
+            } while (!_.every(this.csci, i => i.done) && count <= 2);
+
+          }
+        }
+      },
+    });
+
+    $.getJSON("./store/everything.json", function (data) {
+      app.ug = data
+      app.test();
+
+    });
+
+    $.getJSON("./graduate/everything.json", function (data) {
+      app.grad = data
+      app.test();
+
+    });
+
+    /**
+    From https://gist.github.com/mjackson/5311256
+
+ * Converts an HSL color value to RGB. Conversion formula
+ * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+ * Assumes h, s, and l are contained in the set [0, 1] and
+ * returns r, g, and b in the set [0, 255].
+ *
+ * @param   Number  h       The hue
+ * @param   Number  s       The saturation
+ * @param   Number  l       The lightness
+ * @return  Array           The RGB representation
+ */
+    function hslToRgb(h, s, l) {
+      var r, g, b;
+
+      if (s == 0) {
+        r = g = b = l; // achromatic
+      } else {
+        function hue2rgb(p, q, t) {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1 / 6) return p + (q - p) * 6 * t;
+          if (t < 1 / 2) return q;
+          if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+          return p;
+        }
+
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        var p = 2 * l - q;
+
+        r = hue2rgb(p, q, h + 1 / 3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1 / 3);
+      }
+
+      return [r * 255, g * 255, b * 255];
+    }
+
+
+  </script>
+
+</body>
+
+</html>
