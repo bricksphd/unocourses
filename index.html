@@ -257,13 +257,13 @@
       },
     });
 
-    $.getJSON("./store/everything.json", function (data) {
+    $.getJSON("./everything.json", function (data) {
       app.ug = data
       app.test();
 
     });
 
-    $.getJSON("./graduate/everything.json", function (data) {
+    $.getJSON("./grads.json", function (data) {
       app.grad = data
       app.test();
 
